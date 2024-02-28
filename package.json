@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.0"
+  },
+  "scripts": {
+    "server-dev": "cd server && nodemon --exec ts-node src/server.ts"
+  }
+}
