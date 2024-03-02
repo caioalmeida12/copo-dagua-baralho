@@ -1,0 +1,53 @@
+{
+  "name": "copo-dagua-baralho",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "jest",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon --watch server/src/**/*.ts --exec ts-node -r tsconfig-paths/register server/src/index.ts",
+    "action-server": "npx nodemon --exec ts-node -r tsconfig-paths/register server/src/index.ts",
+    "client": "npm run --prefix client start",
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caioalmeida12/copo-dagua-baralho.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/caioalmeida12/copo-dagua-baralho/issues"
+  },
+  "homepage": "https://github.com/caioalmeida12/copo-dagua-baralho#readme",
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.3.1",
+    "jwt-simple": "^0.5.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-typescript": "^7.23.6",
+    "@jest/globals": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "@types/jwt-simple": "^0.5.36",
+    "@types/supertest": "^2.0.16",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "babel-jest": "^29.7.0",
+    "babel-plugin-module-resolver": "^5.0.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "npm": "^10.2.5",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0"
+  }
+}
