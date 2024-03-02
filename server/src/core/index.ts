@@ -1,4 +1,4 @@
-import isEveryEnvFileValid from "./envValidator";
+import isEveryEnvFileValid from "./IsEveryEnvFileValid";
 import Server from "./server";
 
 // this file will validate the env files and create a new server instance
