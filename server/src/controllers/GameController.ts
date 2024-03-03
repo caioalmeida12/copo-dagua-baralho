@@ -2,46 +2,43 @@ import GameStateSchema from "@lib/types/GameStateType";
 import GameSchema from "@lib/types/GameType";
 import PlayerSchema from "@lib/types/PlayerType";
 import Server from "@server/core/Server";
+import GameService from "@server/services/GameService";
 import { randomUUID } from "crypto";
 import { Socket } from "socket.io";
 
-export class GameController {
-    public static handleEvent(socket: Socket, app: Server) {
-        const instance = new GameController();
-
-        instance.createGame(socket, app);
-        instance.joinGame(socket, app);
-        instance.startGame(socket, app);
-    }
-
-    private createGame(socket: Socket, app: Server) {
-        socket.on("createGame", (data: { name: string }) => {
+class GameController {
+    createGame(socket: Socket, data: string, app: Server) {
+        try {
             const game = GameSchema.parse({
-                id: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                id: "111111",
+                // id: Math.random().toString(36).substring(2, 8).toUpperCase(),
             });
 
             const player = PlayerSchema.parse({
                 id: randomUUID(),
-                name: data.name
+                name: data
             });
 
             const gameState = GameStateSchema.parse({
                 game,
                 players: [player],
-                isPlaying: false
+                isPlaying: false,
             })
 
             app.games.push(gameState);
 
             socket.emit("gameState", gameState);
-        });
+        } catch (error) {
+            console.error(error);
+            socket.emit("error", "An error occurred while creating the game");
+        }
     }
 
-    private joinGame(socket: Socket, app: Server) {
-        socket.on("joinGame", (data: { gameId: string, name: string }) => {
+    joinGame(socket: Socket, data: { gameId: string, name: string }, app: Server) {
+        try {
             const game = app.games.find((game) => game.game.id === data.gameId);
 
-            if (!game) return socket.emit("gameNotFound");
+            if (!game) return socket.emit("error", `A game with id [${data.gameId}] could not be found`);
 
             const player = PlayerSchema.parse({
                 id: randomUUID(),
@@ -51,19 +48,36 @@ export class GameController {
             game.players.push(player);
 
             socket.emit("gameState", game);
-        });
+        } catch (error) {
+            console.error(error);
+            socket.emit("error", "An error occurred while joining the game");
+        }
     }
 
-    private startGame(socket: Socket, app: Server) {
-        socket.on("startGame", (data: { gameId: string }) => {
-            const game = app.games.find((game) => game.game.id === data.gameId);
+    async startGame(socket: Socket, data: { gameId: string }, app: Server) {
+        try {
+            let game = app.games.find((game) => game.game.id === data.gameId);
 
-            if (!game) return socket.emit("gameNotFound");
+            if (!game) return socket.emit("error", `A game with id [${data.gameId}] could not be found`);
 
-            game.isPlaying = true;
+            const cards = GameService.generateCards(game.players.length);
+
+            const deck = GameService.generatePartialDeck(cards)
+
+            if (!deck) return socket.emit("error", "Could not fetch a new deck from DeckOfCards API")
+
+            game = GameStateSchema.parse({
+                ...game,
+                table: deck,
+                isPlaying: true
+            })
 
             socket.emit("gameState", game);
-        });
+        } catch (error) {
+            console.error(error);
+            socket.emit("error", "An error occurred while starting the game");
+        }
     }
 }
 
+export default new GameController()

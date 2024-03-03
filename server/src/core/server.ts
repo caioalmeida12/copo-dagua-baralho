@@ -6,9 +6,8 @@ import { createServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import path from "path";
 
-import { GameController } from "@server/controllers/GameController";
 import { GameStateType } from "@lib/types/GameStateType";
-import gameRoute from "@server/routes/GameRoute";
+import { GameRouter } from "@server/routes/GameRoute";
 
 class Server {
     public app: express.Application;
@@ -29,11 +28,13 @@ class Server {
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
         this.app.use(express.static(path.join(__dirname, 'public')));
-        
-        this.io.on("connection", (socket: Socket) => GameController.handleEvent(socket, this));
 
-        this.app.use("/", gameRoute)
-        
+        this.io.on("connection", (socket: Socket) => GameRouter.handleEvent(socket, this));
+
+        this.app.use("/", (req, res) => {
+            return res.sendFile("index.html", { root: "public" });
+        })
+
         this.app.use("/health", (_req, res) => res.status(200).json({ status: "OK" }));
     }
 
