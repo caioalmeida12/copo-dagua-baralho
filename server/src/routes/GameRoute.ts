@@ -2,6 +2,8 @@ import { Router } from "express";
 
 const gameRoute = Router();
 
-gameRoute.get("/", (req, res) => res.status(200).json({ message: "Hello, World!" }));
+gameRoute.get("/", (req, res) => {
+    return res.sendFile("index.html", { root: "public" });
+});
 
 export default gameRoute;
