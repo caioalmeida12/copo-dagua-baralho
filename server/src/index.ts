@@ -1,4 +1,3 @@
-import Server from "./core/server";
+import core from "./core";
 
-const server = new Server();
-server.start();
+core.server.start(); 

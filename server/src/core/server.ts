@@ -6,7 +6,7 @@ class Server {
     
     constructor() {
         this.app = express();
-        this.port = Number(process.env.PORT) || 3000;
+        this.port = Number(process.env.PORT);
     }
     
     public start(): void {

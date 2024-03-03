@@ -1,13 +1,13 @@
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import isEveryEnvFileValid from "./envValidator";
+import Server from "./server";
 
-import EnvFile from ""
+// this is the entry point of the server
+// it will validate the env files and create a new server instance
+// the server instance will start the server in ../index.ts
 
-const envFiles = fs.readdirSync(path.resolve("../config/env")).filter((file) => file.includes('.env'));
+const core = {
+    isEveryEnvFileValid,
+    server: new Server()
+}
 
-const isEveryEnvFileValid = envFiles.every((file) => {
-    return new EnvFile(file).isValid();
-});
-
-console.log(isEveryEnvFileValid);
+export default core;
