@@ -1,18 +1,53 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Socket.IO Example</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
 </head>
+
 <body>
     <h1>Socket.IO Example</h1>
 
+    <button id="createGameButton">Create Game</button>
+    <input type="text" id="gameId" placeholder="Enter Game ID">
+    <button id="joinGameButton">Join Game</button>
+    <button id="startGameButton">Start Game</button>
+
     <script>
-        // Connect to the Socket.IO server
         const socket = io('http://localhost:5000');
 
-        // Add your Socket.IO event handlers here
+        socket.on('connect', () => {
+            console.log('Connected to the server');
+        });
 
+        socket.on('disconnect', () => {
+            console.log('Disconnected from the server');
+        });
+
+        function createGame() {
+            socket.emit('createGame', { name: 'John Doe' });
+        }
+
+        function joinGame() {
+            const gameId = document.getElementById('gameId').value;
+            socket.emit('joinGame', { gameId: gameId, name: 'Jane Doe' });
+        }
+        
+        function startGame() {
+            const gameId = document.getElementById('gameId').value;
+            socket.emit('startGame', { gameId });
+        }
+
+        socket.on('gameState', (data) => {
+            console.log('Game state:', data);
+        });
+
+        document.getElementById('createGameButton').addEventListener('click', createGame);
+        document.getElementById('joinGameButton').addEventListener('click', joinGame);
+        document.getElementById('startGameButton').addEventListener('click', startGame);
     </script>
+
 </body>
+
 </html>

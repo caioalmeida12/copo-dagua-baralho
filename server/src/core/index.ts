@@ -1,5 +1,5 @@
 import isEveryEnvFileValid from "./IsEveryEnvFileValid";
-import Server from "./server";
+import Server from "./Server";
 
 // this file will validate the env files and create a new server instance
 // the server instance will start the server in ../index.ts
