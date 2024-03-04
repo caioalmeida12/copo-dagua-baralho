@@ -1,0 +1,10 @@
+[Server initiation]
+PORT = 5000
+HOST = localhost
+
+[Application environment]
+NODE_ENV = development
+
+[Deck Of Cards API]
+DECK_OF_CARDS_API = https://deckofcardsapi.com/api/deck/
+CARDS_PER_PLAYER = 6
