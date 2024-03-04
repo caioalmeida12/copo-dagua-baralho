@@ -34,7 +34,13 @@ const GameStateSchema = z.object({
     players: z.array(PlayerSchema),
     isPlaying: z.boolean(),
     table: BaseDeckSchema.extend({
-        cards: z.array(CardSchema).optional()
+        cards: z.array(CardSchema).optional(),
+        piles: z.object({
+            [`${z.string()}`]: z.object({
+                remaining: z.number(),
+                cards: z.array(CardSchema),
+            }),
+        }),
     }).optional()
 });
 

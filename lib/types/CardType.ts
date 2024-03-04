@@ -8,7 +8,7 @@ const CardSchema = z.object({
         png: z.string().url(),
     }),
     value: z.string(),
-    suit: z.enum(["HEARTS", "DIAMONDS", "CLUBS", "SPADES"]),
+    suit: z.enum(["HEARTS", "DIAMONDS", "CLUBS", "SPADES", "BLACK", "RED"]),
 })
 
 export type CardType = z.infer<typeof CardSchema>;
