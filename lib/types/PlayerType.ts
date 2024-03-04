@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import CardSchema from './CardType';
 
 const PlayerSchema = z.object({
     id: z.preprocess(
@@ -9,6 +10,7 @@ const PlayerSchema = z.object({
         (val) => String(val),
         z.string().min(1).max(128).refine((val) => val != 'undefined')
     ),
+    cards: z.array(CardSchema).default([]),
 });
 
 export default PlayerSchema;

@@ -61,69 +61,21 @@ class GameController {
 
     async startGame(socket: Socket, data: { gameId: string }, app: Server) {
         try {
-            // const gameState: GameStateType = GameStateSchema.parse(
-            //     app.games.find((gameState) => gameState.game.id === data.gameId)
-            // );
+            const gameState: GameStateType = GameStateSchema.parse(
+                app.games.find((gameState) => gameState.game.id === data.gameId)
+            );
 
-            // const cards: string = GameService.generateCards(gameState.players.length);
+            const gameStateInstance = app.games.find((instance) => instance.game.id === gameState.game.id)!
 
-            // const deck: NewDeckType = NewDeckSchema.parse(await GameService.generatePartialDeck(cards))
+            const deck = await GameService.getDeck(gameStateInstance.players);
 
-            // const drawnCardsWithJoker: DrawnCardType[] = await Promise.all(gameState.players.map(async () => DrawnCardSchema.parse(await GameService.drawCards(deck.deck_id, Number(process.env.CARDS_PER_PLAYER)))))
-            // drawnCardsWithJoker.push(DrawnCardSchema.parse(await GameService.drawCards(deck.deck_id, 1)))
+            const distributedCards = await GameService.distributeCards(deck.deck_id, gameStateInstance.players);
 
-            // const drawnCards = drawnCardsWithJoker.filter((drawnCard) => drawnCard.cards[0].code !== "X1")
+            gameStateInstance.deck = NewDeckSchema.parse(deck);
+            gameStateInstance.isPlaying = true;
 
-            // const listedCards = drawnCards.map((drawnCard) => drawnCard.cards)
-
-            // const playerIds = app.games.find((instance) => instance.game.id === gameState.game.id)!.players.map((player) => player.id)
-
-            // const playerWithJoker = app.games.find((instance) => instance.game.id === gameState.game.id)!.players[Math.floor(Math.random() * playerIds.length)].id
-            // await GameService.addCardsToPile(playerWithJoker, [{
-            //     code: "X1",
-            //     value: "",
-            //     image: "",
-            //     images: {
-            //         svg: "",
-            //         png: ""
-            //     },
-            //     suit: "HEARTS"
-            // }], deck.deck_id)
-
-            // const piles: DeckWithPilesType[] = await Promise.all(
-            //     playerIds.map(async (playerId, playerIndex) => await GameService.addCardsToPile(playerId, listedCards[playerIndex], deck.deck_id))
-            // )
-
-            // if (!piles) return socket.emit("error", "Could not add cards to piles")
-
-            // const listedPileCards = await Promise.all(
-            //     playerIds.map(async (playerId) => await GameService.listCardsOfPile(playerId, deck.deck_id))
-            // )
-
-            // if (!listedPileCards) return socket.emit("error", "Could not list cards of piles")
-
-            // const listedPiles: { [key: string]: CardType[] }[] = playerIds.map((playerId, index) => {
-            //     return {
-            //         [playerId]: listedPileCards[index]
-            //     }
-            // })
-
-            // if (!listedPiles) return socket.emit("error", "Could not list cards of piles")
-
-            // console.table(listedPiles)
-
-            // let gameStateInstance = app.games.find((instance) => instance.game.id === gameState.game.id)!
-
-            // gameStateInstance = GameStateSchema.parse({
-            //     ...gameStateInstance,
-            //     isPlaying: true,
-            //     table: {
-            //         ...table,
-            //         piles: listedPiles
-            //     }
-            // })
-
-            // socket.emit("gameState", gameStateInstance);
+            socket.emit("gameState", gameStateInstance);
+            
         } catch (error) {
             console.error(error);
             socket.emit("error", "An error occurred while starting the game");
