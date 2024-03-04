@@ -1,10 +1,11 @@
-import GameStateSchema from "@lib/types/GameStateType";
+import { DeckWithPilesType, DrawnCardSchema, DrawnCardType, GameStateSchema, GameStateType, NewDeckSchema, NewDeckType } from "@lib/types/GameStateType";
 import GameSchema from "@lib/types/GameType";
 import PlayerSchema from "@lib/types/PlayerType";
 import Server from "@server/core/Server";
 import GameService from "@server/services/GameService";
 import { randomUUID } from "crypto";
 import { Socket } from "socket.io";
+
 
 class GameController {
     createGame(socket: Socket, data: string, app: Server) {
@@ -15,7 +16,7 @@ class GameController {
             });
 
             const player = PlayerSchema.parse({
-                id: randomUUID(),
+                id: String(randomUUID()).replace(/-/g, ""),
                 name: data
             });
 
@@ -36,18 +37,20 @@ class GameController {
 
     joinGame(socket: Socket, data: { gameId: string, name: string }, app: Server) {
         try {
-            const game = app.games.find((game) => game.game.id === data.gameId);
-
-            if (!game) return socket.emit("error", `A game with id [${data.gameId}] could not be found`);
+            const gameState: GameStateType = GameStateSchema.parse(
+                app.games.find((gameState) => gameState.game.id === data.gameId)
+            );
 
             const player = PlayerSchema.parse({
-                id: randomUUID(),
+                id: String(randomUUID()).replace(/-/g, ""),
                 name: data.name
             });
 
-            game.players.push(player);
+            const gameStateInstance = app.games.find((instance) => instance.game.id === gameState.game.id)!
 
-            socket.emit("gameState", game);
+            gameStateInstance.players.push(player);
+
+            socket.emit("gameState", gameStateInstance);
         } catch (error) {
             console.error(error);
             socket.emit("error", "An error occurred while joining the game");
@@ -56,23 +59,39 @@ class GameController {
 
     async startGame(socket: Socket, data: { gameId: string }, app: Server) {
         try {
-            let game = app.games.find((game) => game.game.id === data.gameId);
+            const gameState: GameStateType = GameStateSchema.parse(
+                app.games.find((gameState) => gameState.game.id === data.gameId)
+            );
 
-            if (!game) return socket.emit("error", `A game with id [${data.gameId}] could not be found`);
+            const cards: string = GameService.generateCards(gameState.players.length);
 
-            const cards = GameService.generateCards(game.players.length);
+            const deck: NewDeckType = NewDeckSchema.parse(await GameService.generatePartialDeck(cards))
 
-            const deck = GameService.generatePartialDeck(cards)
+            const drawnCards: DrawnCardType[] = await Promise.all(gameState.players.map(async () => DrawnCardSchema.parse(await GameService.drawCards(deck.deck_id, Number(process.env.CARDS_PER_PLAYER)))))
 
-            if (!deck) return socket.emit("error", "Could not fetch a new deck from DeckOfCards API")
-
-            game = GameStateSchema.parse({
-                ...game,
-                table: deck,
-                isPlaying: true
+            const playersAndCards = gameState.players.map((player, index) => {
+                return {
+                    ...player,
+                    cards: drawnCards[index].cards,
+                    deckId: deck.deck_id
+                }
             })
 
-            socket.emit("gameState", game);
+            const piles: DeckWithPilesType[] = await Promise.all(
+                playersAndCards.map(async (playerAndCards) => await GameService.addCardsToPile(playerAndCards))
+            )
+
+            if (!piles) return socket.emit("error", "Could not add cards to piles")
+
+            let gameStateInstance = app.games.find((instance) => instance.game.id === gameState.game.id)!
+
+            gameStateInstance = GameStateSchema.parse({
+                ...gameStateInstance,
+                isPlaying: true,
+                table: piles.at(-1)
+            })
+
+            socket.emit("gameState", gameStateInstance);
         } catch (error) {
             console.error(error);
             socket.emit("error", "An error occurred while starting the game");
