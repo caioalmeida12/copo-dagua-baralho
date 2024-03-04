@@ -29,22 +29,23 @@ class GameService {
      */
     async distributeCards(deckId: string, players: PlayerType[]): Promise<void> {
         try {
-            const drawnCards = await this.drawCards(deckId, (players.length + 1)* Number(process.env.CARDS_PER_PLAYER));
+            const drawnCards = await this.drawCards(deckId, (players.length + 1) * Number(process.env.CARDS_PER_PLAYER));
             const cards: CardType[] = drawnCards.cards.map((card) => CardSchema.parse(card));
 
             const initialHands = this.generateInitialHands(players, cards);
             const initialHandsCodes = initialHands.map((hand) => hand.cards.map((card) => card.code).join(","));
 
-            // testado até aqui
-
             const addedToPile: DeckWithPilesType[] = await this.addInitialHandsToPiles(deckId, players, initialHandsCodes);
-
-            console.log(addedToPile.at(-1)?.piles)
 
             const listedPiles = await this.getListedPiles(deckId, players);
 
+            console.table(
+                [initialHandsCodes.join(" --- "),
+                listedPiles.map((pile) => pile.map((card) => card.code).join(",")).join(" --- ")]
+            )
+
             const assignedHands = this.assignPlayerHands(players, listedPiles);
-            
+
         } catch (error: any) {
             throw new Error(error);
         }
@@ -99,22 +100,23 @@ class GameService {
      * @returns An array of objects containing the player ID and their initial hand of cards.
      */
     private generateInitialHands(players: PlayerType[], cards: CardType[]): { playerId: string, cards: CardType[] }[] {
-        const initialHands: { playerId: string, cards: CardType[] }[] = [];
-        const cardsPerPlayer = Math.floor(cards.length / players.length);
-    
-        for (let i = 0; i < players.length; i++) {
-            initialHands.push({ playerId: players[i].id, cards: cards.splice(0, cardsPerPlayer) });
-        }
-    
-        // Distribute remaining cards (if any)
-        let index = 0;
-        while (cards.length > 0) {
-            initialHands[index].cards.push(cards.splice(0, 1)[0]);
-            index = (index + 1) % players.length;
-        }
-    
-        return initialHands;
+    const initialHands: { playerId: string, cards: CardType[] }[] = [];
+    const cardsPerPlayer = Number(process.env.CARDS_PER_PLAYER);
+
+    for (let i = 0; i < players.length; i++) {
+        const playerCards = cards.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
+        initialHands.push({ playerId: players[i].id, cards: playerCards });
     }
+
+    // Distribute remaining cards (if any)
+    let index = 0;
+    while (cards.length > players.length * cardsPerPlayer) {
+        initialHands[index].cards.push(cards[players.length * cardsPerPlayer + index]);
+        index = (index + 1) % players.length;
+    }
+
+    return initialHands;
+}
 
     /**
      * Retrieves the listed piles of cards for the specified deck and players.
@@ -152,7 +154,13 @@ class GameService {
      * @returns A promise that resolves to an array of DeckWithPilesType objects representing the updated piles.
      */
     private async addInitialHandsToPiles(deckId: string, players: PlayerType[], initialHandsCodes: string[]): Promise<DeckWithPilesType[]> {
-        const addedToPile: DeckWithPilesType[] = await Promise.all(players.map((player, index) => this.addCardsToPile(deckId, player.id, initialHandsCodes[index])));
+        const addedToPile: DeckWithPilesType[] = [];
+        for (let i = 0; i < players.length; i++) {
+            const player = players[i];
+            const initialHandCode = initialHandsCodes[i];
+            const result = await this.addCardsToPile(deckId, player.id, initialHandCode);
+            addedToPile.push(result);
+        }
         return addedToPile;
     }
 
