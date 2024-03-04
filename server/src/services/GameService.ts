@@ -29,22 +29,41 @@ class GameService {
      */
     async distributeCards(deckId: string, players: PlayerType[]): Promise<void> {
         try {
-            const drawnCards = await this.drawCards(deckId, (players.length + 1) * Number(process.env.CARDS_PER_PLAYER));
+            const drawnCards = await this.drawCardsFromDeck(deckId, (players.length + 1) * Number(process.env.CARDS_PER_PLAYER));
             const cards: CardType[] = drawnCards.cards.map((card) => CardSchema.parse(card));
 
             const initialHands = this.generateInitialHands(players, cards);
-            const initialHandsCodes = initialHands.map((hand) => hand.cards.map((card) => card.code).join(","));
 
-            const addedToPile: DeckWithPilesType[] = await this.addInitialHandsToPiles(deckId, players, initialHandsCodes);
+            const tablePile = await this.addCardsToPile(deckId, "table", cards.map((card) => card.code).join(","));
+
+            const listedTablePile = await this.listCardsOfPile("table", deckId);
+
+            const addedToPile: DeckWithPilesType[] = await this.addInitialHandsToPiles(deckId, players, initialHands.map((hand) => hand.cards.map((card) => card.code).join(",")));
 
             const listedPiles = await this.getListedPiles(deckId, players);
 
-            console.table(
-                [initialHandsCodes.join(" --- "),
-                listedPiles.map((pile) => pile.map((card) => card.code).join(",")).join(" --- ")]
-            )
+            
 
-            const assignedHands = this.assignPlayerHands(players, listedPiles);
+
+            // const initialHands = this.generateInitialHands(players, cards);
+            // const initialHandsCodes = initialHands.map((hand) => hand.cards.map((card) => card.code).join(","));
+
+            // const tablePile = await this.addCardsToPile(deckId, "table", cards.map((card) => card.code).join(","));
+
+            // console.table(tablePile);
+
+            // const addedToPile: DeckWithPilesType[] = await this.addInitialHandsToPiles(deckId, players, initialHandsCodes);
+
+            // console.table(addedToPile.map((pile) => pile.piles));
+
+            // const listedPiles = await this.getListedPiles(deckId, players);
+
+            // console.table(
+            //     [initialHandsCodes.join(" --- "),
+            //     listedPiles.map((pile) => pile.map((card) => card.code).join(",")).join(" --- ")]
+            // )
+
+            // const assignedHands = this.assignPlayerHands(players, listedPiles);
 
         } catch (error: any) {
             throw new Error(error);
@@ -100,23 +119,20 @@ class GameService {
      * @returns An array of objects containing the player ID and their initial hand of cards.
      */
     private generateInitialHands(players: PlayerType[], cards: CardType[]): { playerId: string, cards: CardType[] }[] {
-    const initialHands: { playerId: string, cards: CardType[] }[] = [];
-    const cardsPerPlayer = Number(process.env.CARDS_PER_PLAYER);
+        const initialHands: { playerId: string, cards: CardType[] }[] = [];
+        const cardsPerPlayer = Number(process.env.CARDS_PER_PLAYER);
 
-    for (let i = 0; i < players.length; i++) {
-        const playerCards = cards.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
-        initialHands.push({ playerId: players[i].id, cards: playerCards });
+        // the first player gets the first cardsPerPlayer+1 cards, the second player gets the next cardsPerPlayer cards, and so on
+        for (let i = 0; i < players.length; i++) {
+            if (i === 0) {
+                initialHands.push({ playerId: players[i].id, cards: cards.slice(i * (cardsPerPlayer + 1), (i + 1) * (cardsPerPlayer + 1)) });
+            } else {
+                initialHands.push({ playerId: players[i].id, cards: cards.slice(i * cardsPerPlayer + 1, (i + 1) * cardsPerPlayer + 1) });
+            }
+        }
+
+        return initialHands;
     }
-
-    // Distribute remaining cards (if any)
-    let index = 0;
-    while (cards.length > players.length * cardsPerPlayer) {
-        initialHands[index].cards.push(cards[players.length * cardsPerPlayer + index]);
-        index = (index + 1) % players.length;
-    }
-
-    return initialHands;
-}
 
     /**
      * Retrieves the listed piles of cards for the specified deck and players.
@@ -154,13 +170,14 @@ class GameService {
      * @returns A promise that resolves to an array of DeckWithPilesType objects representing the updated piles.
      */
     private async addInitialHandsToPiles(deckId: string, players: PlayerType[], initialHandsCodes: string[]): Promise<DeckWithPilesType[]> {
-        const addedToPile: DeckWithPilesType[] = [];
-        for (let i = 0; i < players.length; i++) {
-            const player = players[i];
-            const initialHandCode = initialHandsCodes[i];
-            const result = await this.addCardsToPile(deckId, player.id, initialHandCode);
-            addedToPile.push(result);
-        }
+        const initialHandsDrawn = await Promise.all(players.map(async (player, index) => {
+            return await this.drawCardsFromTablePile(deckId, Number(process.env.CARDS_PER_PLAYER));
+        }));
+
+        const addedToPile = await Promise.all(initialHandsDrawn.map(async (drawn, index) => {
+            return await this.addCardsToPile(deckId, players[index].id, initialHandsCodes[index]);
+        }));
+
         return addedToPile;
     }
 
@@ -171,9 +188,19 @@ class GameService {
      * @returns A promise that resolves to the drawn cards.
      * @throws If an error occurs during the API request.
      */
-    private async drawCards(deckId: string, count: number): Promise<DrawnCardType> {
+    private async drawCardsFromDeck(deckId: string, count: number): Promise<DrawnCardType> {
         try {
             const response = await fetch(`${process.env.DECK_OF_CARDS_API}${deckId}/draw/?count=${count}`);
+            const data = await response.json();
+            return data;
+        } catch (error: any) {
+            throw new Error(error);
+        }
+    }
+
+    private async drawCardsFromTablePile(deckId: string, count: number): Promise<DrawnCardType> {
+        try {
+            const response = await fetch(`${process.env.DECK_OF_CARDS_API}${deckId}/pile/table/draw/?count=${count}`);
             const data = await response.json();
             return data;
         } catch (error: any) {

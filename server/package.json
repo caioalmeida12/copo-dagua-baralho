@@ -38,6 +38,7 @@
     "mysql2": "^3.6.1",
     "sequelize": "^6.33.0",
     "sequelize-typescript": "^2.1.6",
+    "socket.io": "^4.7.4",
     "sqlite3": "^5.1.6",
     "tsconfig-paths": "^4.2.0",
     "utility-types": "^3.10.0",
