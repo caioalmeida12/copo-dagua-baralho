@@ -69,15 +69,16 @@ class GameController {
 
             const deck = await GameService.getDeck(gameStateInstance.players);
 
-            const distributedCards = await GameService.distributeCards(deck.deck_id, gameStateInstance.players);
+            gameStateInstance.deck = deck
 
-            gameStateInstance.deck = NewDeckSchema.parse(deck);
+            const distributedCards = await GameService.distributeInitialHands(gameStateInstance);
+
             gameStateInstance.isPlaying = true;
 
             socket.emit("gameState", gameStateInstance);
             
         } catch (error) {
-            console.error(error);
+            console.log(error)
             socket.emit("error", "An error occurred while starting the game");
         }
     }

@@ -17,12 +17,10 @@ const DrawnCardSchema = BaseDeckSchema.extend({
 });
 
 const DeckWithPilesSchema = BaseDeckSchema.extend({
-    piles: z.object({
-        [`${z.string()}`]: z.object({
-            remaining: z.number(),
-            cards: z.array(CardSchema),
-        }),
-    }),
+    piles: z.record(z.string(), z.object({
+        remaining: z.number(),
+        cards: z.array(CardSchema).optional(),
+    })),
 });
 
 const DeckWithPilesAndDrawnCardsSchema = DeckWithPilesSchema.extend({
