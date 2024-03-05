@@ -1,3 +1,4 @@
+import { CardType } from "@lib/types/CardType";
 import { DeckWithPilesType, DrawnCardType as DeckWithDrawnCardsType, GameStateType, NewDeckSchema, NewDeckType, DrawnCardSchema as DeckWithDrawnCardsSchema, DeckWithPilesSchema } from "@lib/types/GameStateType";
 import { PlayerType } from "@lib/types/PlayerType";
 
@@ -17,11 +18,12 @@ class GameService {
 
         const listPiles = await this.listPilesForAllPlayers(gameStateInstance)
 
-        console.log(listPiles.map(pile => pile.piles))
+        // console.table(listPiles.map(pile => pile.map(card => card.code)))
 
         const distrutedHands = gameStateInstance.players.map((player, index) => {
             return {
                 ...player,
+                cards: listPiles[index]
             }
         })
 
@@ -44,7 +46,7 @@ class GameService {
 
         const returnCardFromPlayer = await this.returnCardFromPileToTable(gameStateInstance.deck!.deck_id, player.id, card)
 
-        console.log(returnCardFromPlayer)
+        // console.log(this.listPileForPlayer(gameStateInstance, player))
 
         const nextPlayerId = gameStateInstance.players[(playerIndex + 1) % gameStateInstance.players.length].id
 
@@ -104,14 +106,23 @@ class GameService {
     }
 
     private async makePileForPlayer(gameStateInstance: GameStateType, player: PlayerType, cards: string): Promise<DeckWithPilesType> {
-        const responseCreatePile = await fetch(`${process.env.DECK_OF_CARDS_API}${gameStateInstance.deck!.deck_id}/pile/${player.id}/add/?cards=${cards}`).then(res => res.json())
+        const cardsArray = cards.split(",");
+        const responseCreatePile = [];
+        for (const card of cardsArray) {
+            c24onsole.log(card)
 
-        const pileCreated = DeckWithPilesSchema.parse(responseCreatePile)
+            const response = fetch(`${process.env.DECK_OF_CARDS_API}${gameStateInstance.deck!.deck_id}/pile/${player.id}/add/?cards=${card}`).then(res => res.json());
+            responseCreatePile.push(response);
+        }
+        
+        const pileCreated = DeckWithPilesSchema.parse((await Promise.all(responseCreatePile)).at(-1))
+        
+        console.log(pileCreated.piles)
 
         return pileCreated
     }
 
-    private async listPilesForAllPlayers(gameStateInstance: GameStateType): Promise<DeckWithPilesType[]> {
+    private async listPilesForAllPlayers(gameStateInstance: GameStateType): Promise<CardType[][]> {
         const listPiles = gameStateInstance.players.map(async (player) => {
             const pile = await this.listPileForPlayer(gameStateInstance, player)
 
@@ -123,12 +134,12 @@ class GameService {
         return piles
     }
 
-    private async listPileForPlayer(gameStateInstance: GameStateType, player: PlayerType): Promise<DeckWithPilesType> {
+    private async listPileForPlayer(gameStateInstance: GameStateType, player: PlayerType): Promise<CardType[]> {
         const responseListPile = await fetch(`${process.env.DECK_OF_CARDS_API}${gameStateInstance.deck!.deck_id}/pile/${player.id}/list/`).then(res => res.json())
 
-        const listedPile = DeckWithPilesSchema.parse(responseListPile)
+        const listedPile = DeckWithPilesSchema.required({ piles: true }).parse(responseListPile)
 
-        return listedPile
+        return listedPile.piles[player.id].cards!
     }
 
 
@@ -143,6 +154,7 @@ class GameService {
 
     private async drawFromTable(deck: string, player: string, index: number): Promise<DeckWithDrawnCardsType> {
         const cardsForThisPlayer = (index === 0) ? Number(process.env.CARDS_PER_PLAYER) + 1 : Number(process.env.CARDS_PER_PLAYER)
+
         const response = await fetch(`${process.env.DECK_OF_CARDS_API}${deck}/pile/table/draw/?count=${cardsForThisPlayer}`).then(res => res.json())
 
         const drawnCards = DeckWithDrawnCardsSchema.parse(response)
