@@ -99,7 +99,7 @@ class GameController {
                 return;
             }
 
-            const passTheCard = GameService.passCard(gameStateInstance, data.player, data.card);
+            const passTheCard = await GameService.passCard(gameStateInstance, data.player, data.card);
 
             socket.emit("gameState", gameStateInstance);
         } catch (error) {
