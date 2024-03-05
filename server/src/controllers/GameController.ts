@@ -17,8 +17,10 @@ class GameController {
 
             const player = PlayerSchema.parse({
                 id: String(randomUUID()).replace(/-/g, ""),
-                name: data
+                name: data,
             });
+
+            game.nextPlayer = player.id;
 
             const gameState = GameStateSchema.parse({
                 game,
@@ -81,6 +83,32 @@ class GameController {
             socket.emit("error", "An error occurred while starting the game");
         }
     }
+
+    async passCard(socket: Socket, data: { game: string, player: string, card: string }, app: Server) {
+        try {
+            const gameState: GameStateType = GameStateSchema.parse(
+                app.games.find((gameState) => gameState.game.id === data.game)
+            );
+
+            const gameStateInstance = app.games.find((instance) => instance.game.id === gameState.game.id)!
+                
+            const isPlayerTurn = GameService.isPlayerTurn(gameStateInstance, data.player);
+
+            if (!isPlayerTurn) {
+                socket.emit("error", "It's not your turn");
+                return;
+            }
+
+            const passTheCard = GameService.passCard(gameStateInstance, data.player, data.card);
+
+            socket.emit("gameState", gameStateInstance);
+        } catch (error) {
+            console.error(error);
+            socket.emit("error", "An error occurred while passing the card");
+        }
+    }
+
+    
 }
 
 export default new GameController()

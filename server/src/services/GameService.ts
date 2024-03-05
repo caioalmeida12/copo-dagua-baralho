@@ -27,6 +27,24 @@ class GameService {
         return table
     }
 
+    isPlayerTurn(gameStateInstance: GameStateType, playerId: string): boolean {
+        if (!gameStateInstance.game.nextPlayer) gameStateInstance.game.nextPlayer = gameStateInstance.players[0].id
+
+        return gameStateInstance.game.nextPlayer === playerId
+    }
+
+    passCard(gameStateInstance: GameStateType, playerId: string, card: string): GameStateType {
+        const playerIndex = gameStateInstance.players.findIndex((player) => player.id === playerId)
+
+        if (playerIndex === -1) throw new Error("Player not found")
+
+        const nextPlayerId = gameStateInstance.players[(playerIndex + 1) % gameStateInstance.players.length].id
+
+        gameStateInstance.game.nextPlayer = nextPlayerId
+
+        return gameStateInstance
+    }
+
     private whatCardsShouldBeInGame(players: PlayerType[]): string {
         const allCardCodes = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
         const suits = ['S', 'H', 'C', 'D'];
@@ -76,6 +94,16 @@ class GameService {
         const drawnCards = DeckWithDrawnCardsSchema.parse(response)
 
         return drawnCards
+    }
+
+    private async returnCardFromPileToTable(deck: string, pile: string, card: string): Promise<DeckWithDrawnCardsType> {
+        const responseReturn = await fetch(`${process.env.DECK_OF_CARDS_API}${deck}/pile/${pile}/return/?cards=${card}`).then(res => res.json())
+
+        const returnedCard = DeckWithDrawnCardsSchema.parse(responseReturn)
+
+        const addToTablePile = await this.drawCardsFromDeck(deck, card)
+
+        return addToTablePile
     }
 }
 

@@ -9,6 +9,7 @@ export class GameRouter {
         instance.createGame(socket, app);
         instance.joinGame(socket, app);
         instance.startGame(socket, app);
+        instance.passCard(socket, app);
     }
 
     private createGame(socket: Socket, app: Server) {
@@ -21,6 +22,10 @@ export class GameRouter {
 
     private startGame(socket: Socket, app: Server) {
         socket.on("startGame", (data) => GameController.startGame(socket, data, app));
+    }
+
+    private passCard(socket: Socket, app: Server) {
+        socket.on("passCard", (data) => GameController.passCard(socket, data, app));
     }
 }
 

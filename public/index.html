@@ -14,7 +14,11 @@
     <button id="joinGameButton">Join Game</button>
     <button id="startGameButton">Start Game</button>
 
+    <button id="passCardButton">Pass Card</button>
+
     <script>
+        let gameState = null;
+
         const socket = io('http://localhost:5000');
 
         socket.on('connect', () => {
@@ -37,19 +41,36 @@
             const gameId = document.getElementById('gameId').value;
             socket.emit('joinGame', { gameId: gameId, name: 'Jane Doe' });
         }
-        
+
         function startGame() {
             const gameId = document.getElementById('gameId').value;
             socket.emit('startGame', { gameId });
         }
 
+        function passCard() {
+            const player = gameState.players.find(player => player.id === gameState.game.nextPlayer)
+
+            const data = {
+                game: gameState.game.id,
+                player: player.id,
+                card: player.cards[0].code
+            }
+
+            console.table(data)
+
+            socket.emit('passCard', data);
+        }
+
         socket.on('gameState', (data) => {
-            console.log('Game state:', data);
+            console.info(data)
+
+            gameState = data;
         });
 
         document.getElementById('createGameButton').addEventListener('click', createGame);
         document.getElementById('joinGameButton').addEventListener('click', joinGame);
         document.getElementById('startGameButton').addEventListener('click', startGame);
+        document.getElementById('passCardButton').addEventListener('click', passCard);
     </script>
 
 </body>
