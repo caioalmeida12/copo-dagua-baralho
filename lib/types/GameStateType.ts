@@ -7,7 +7,7 @@ const BaseDeckSchema = z.object({
     success: z.boolean(),
     deck_id: z.string(),
     shuffled: z.boolean().optional(),
-    remaining: z.number(),
+    remaining: z.number().optional(),
 });
 
 const NewDeckSchema = BaseDeckSchema;
