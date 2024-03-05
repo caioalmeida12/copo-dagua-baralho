@@ -1,10 +1,8 @@
-import { CardType } from "@lib/types/CardType";
-import { DeckWithPilesType, DrawnCardSchema, DrawnCardType, GameStateSchema, GameStateType, NewDeckSchema, NewDeckType } from "@lib/types/GameStateType";
+import { GameStateSchema, GameStateType } from "@lib/types/GameStateType";
 import GameSchema from "@lib/types/GameType";
 import PlayerSchema from "@lib/types/PlayerType";
 import Server from "@server/core/Server";
 import GameService from "@server/services/GameService";
-import { table } from "console";
 import { randomUUID } from "crypto";
 import { Socket } from "socket.io";
 
@@ -71,6 +69,7 @@ class GameController {
 
             gameStateInstance.deck = deck
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const distributedCards = await GameService.distributeInitialHands(gameStateInstance);
 
             gameStateInstance.isPlaying = true;

@@ -1,4 +1,3 @@
-import CardSchema, { CardType } from "@lib/types/CardType";
 import { DeckWithPilesType, DrawnCardType as DeckWithDrawnCardsType, GameStateType, NewDeckSchema, NewDeckType, DrawnCardSchema as DeckWithDrawnCardsSchema, DeckWithPilesSchema } from "@lib/types/GameStateType";
 import { PlayerType } from "@lib/types/PlayerType";
 
@@ -47,10 +46,12 @@ class GameService {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const drawAllCards = this.drawCardsFromDeck(gameStateInstance.deck!.deck_id, this.whatCardsShouldBeInGame(gameStateInstance.players))
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const responseCreateTablePile = await fetch(`${process.env.DECK_OF_CARDS_API}${gameStateInstance.deck!.deck_id}/pile/table/add/?cards=${this.whatCardsShouldBeInGame(gameStateInstance.players)}`).then(res => res.json())
     
         const responseTablePileShuffled = await fetch(`${process.env.DECK_OF_CARDS_API}${gameStateInstance.deck!.deck_id}/pile/table/shuffle/`).then(res => res.json())
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const tablePileCreated = DeckWithPilesSchema.parse(responseTablePileShuffled)
         
         const responseListTablePile = await fetch(`${process.env.DECK_OF_CARDS_API}${gameStateInstance.deck!.deck_id}/pile/table/list/`).then(res => res.json())
